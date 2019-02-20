@@ -126,12 +126,18 @@ if (!apply) {
  * Don't export this function outside this module!
  * @param {?TrustedTypePolicyFactory} trustedTypes The policy factory.
  * @param {Document} document The document object (to determine policy name suffix)
- * @return {?TrustedTypePolicy} The policy created (or null, if Trusted Types
- * are not supported).
+ * @return {TrustedTypePolicy|{createHTML: function}} The policy created (or object identical to it in interface,
+ * if Trusted Types are not supported).
  */
 var _createTrustedTypesPolicy = function _createTrustedTypesPolicy(trustedTypes, document) {
+  var pseudoPolicy = {
+    createHTML: function createHTML(html$$1) {
+      return html$$1;
+    }
+  };
+
   if ((typeof trustedTypes === 'undefined' ? 'undefined' : _typeof(trustedTypes)) !== 'object' || typeof trustedTypes.createPolicy !== 'function') {
-    return null;
+    return pseudoPolicy;
   }
 
   // Allow the callers to control the unique policy name
@@ -156,7 +162,7 @@ var _createTrustedTypesPolicy = function _createTrustedTypesPolicy(trustedTypes,
     // already run). Skip creating the policy, as this will only cause errors
     // if TT are enforced.
     console.warn('TrustedTypes policy ' + policyName + ' could not be created.');
-    return null;
+    return pseudoPolicy;
   }
 };
 
@@ -218,6 +224,7 @@ function createDOMPurify() {
   }
 
   var trustedTypesPolicy = _createTrustedTypesPolicy(TrustedTypes, originalDocument);
+
   var emptyHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML('') : '';
 
   var _document = document,
@@ -315,6 +322,9 @@ function createDOMPurify() {
    * of importing it into a new Document and returning a sanitized copy */
   var IN_PLACE = false;
 
+  /* Whether to use trusted types API inside sanitizer */
+  var USE_TRUSTED_TYPES = true;
+
   /* Allow usage of profiles like html, svg and mathMl */
   var USE_PROFILES = {};
 
@@ -370,6 +380,7 @@ function createDOMPurify() {
     SANITIZE_DOM = cfg.SANITIZE_DOM !== false; // Default true
     KEEP_CONTENT = cfg.KEEP_CONTENT !== false; // Default true
     IN_PLACE = cfg.IN_PLACE || false; // Default false
+    USE_TRUSTED_TYPES = cfg.USE_TRUSTED_TYPES !== false; // Default true
 
     IS_ALLOWED_URI$$1 = cfg.ALLOWED_URI_REGEXP || IS_ALLOWED_URI$$1;
 
@@ -532,7 +543,7 @@ function createDOMPurify() {
           body = _doc.body;
 
       body.parentNode.removeChild(body.parentNode.firstElementChild);
-      body.outerHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML(dirty) : dirty;
+      body.outerHTML = USE_TRUSTED_TYPES ? trustedTypesPolicy.createHTML(dirty) : dirty;
     }
 
     if (leadingWhitespace) {
@@ -668,7 +679,7 @@ function createDOMPurify() {
       if (KEEP_CONTENT && !FORBID_CONTENTS[tagName] && typeof currentNode.insertAdjacentHTML === 'function') {
         try {
           var htmlToInsert = currentNode.innerHTML;
-          currentNode.insertAdjacentHTML('AfterEnd', trustedTypesPolicy ? trustedTypesPolicy.createHTML(htmlToInsert) : htmlToInsert);
+          currentNode.insertAdjacentHTML('AfterEnd', USE_TRUSTED_TYPES ? trustedTypesPolicy.createHTML(htmlToInsert) : htmlToInsert);
         } catch (error) {}
       }
 
@@ -992,7 +1003,7 @@ function createDOMPurify() {
     } else {
       /* Exit directly if we have nothing to do */
       if (!RETURN_DOM && !SAFE_FOR_TEMPLATES && !WHOLE_DOCUMENT && dirty.indexOf('<') === -1) {
-        return trustedTypesPolicy ? trustedTypesPolicy.createHTML(dirty) : dirty;
+        return USE_TRUSTED_TYPES ? trustedTypesPolicy.createHTML(dirty) : dirty;
       }
 
       /* Initialize the document to work on */
@@ -1075,7 +1086,7 @@ function createDOMPurify() {
       serializedHTML = serializedHTML.replace(ERB_EXPR$$1, ' ');
     }
 
-    return trustedTypesPolicy ? trustedTypesPolicy.createHTML(serializedHTML) : serializedHTML;
+    return USE_TRUSTED_TYPES ? trustedTypesPolicy.createHTML(serializedHTML) : serializedHTML;
   };
 
   /**
