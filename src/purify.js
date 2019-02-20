@@ -19,15 +19,21 @@ if (!apply) {
  * Don't export this function outside this module!
  * @param {?TrustedTypePolicyFactory} trustedTypes The policy factory.
  * @param {Document} document The document object (to determine policy name suffix)
- * @return {?TrustedTypePolicy} The policy created (or null, if Trusted Types
- * are not supported).
+ * @return {TrustedTypePolicy|{createHTML: function}} The policy created (or object identical to it in interface,
+ * if Trusted Types are not supported).
  */
 const _createTrustedTypesPolicy = function(trustedTypes, document) {
+  const pseudoPolicy = {
+    createHTML(html) {
+      return html;
+    },
+  };
+
   if (
     typeof trustedTypes !== 'object' ||
     typeof trustedTypes.createPolicy !== 'function'
   ) {
-    return null;
+    return pseudoPolicy;
   }
 
   // Allow the callers to control the unique policy name
@@ -57,7 +63,7 @@ const _createTrustedTypesPolicy = function(trustedTypes, document) {
     console.warn(
       'TrustedTypes policy ' + policyName + ' could not be created.'
     );
-    return null;
+    return pseudoPolicy;
   }
 };
 
@@ -118,6 +124,7 @@ function createDOMPurify(window = getGlobal()) {
     TrustedTypes,
     originalDocument
   );
+
   const emptyHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML('') : '';
 
   const {
@@ -231,6 +238,9 @@ function createDOMPurify(window = getGlobal()) {
    * of importing it into a new Document and returning a sanitized copy */
   let IN_PLACE = false;
 
+  /* Whether to use trusted types API inside sanitizer */
+  let USE_TRUSTED_TYPES = false;
+
   /* Allow usage of profiles like html, svg and mathMl */
   let USE_PROFILES = {};
 
@@ -321,6 +331,7 @@ function createDOMPurify(window = getGlobal()) {
     SANITIZE_DOM = cfg.SANITIZE_DOM !== false; // Default true
     KEEP_CONTENT = cfg.KEEP_CONTENT !== false; // Default true
     IN_PLACE = cfg.IN_PLACE || false; // Default false
+    USE_TRUSTED_TYPES = cfg.USE_TRUSTED_TYPES === false; // Default true
 
     IS_ALLOWED_URI = cfg.ALLOWED_URI_REGEXP || IS_ALLOWED_URI;
 
@@ -481,7 +492,7 @@ function createDOMPurify(window = getGlobal()) {
       doc = implementation.createHTMLDocument('');
       const { body } = doc;
       body.parentNode.removeChild(body.parentNode.firstElementChild);
-      body.outerHTML = trustedTypesPolicy
+      body.outerHTML = USE_TRUSTED_TYPES
         ? trustedTypesPolicy.createHTML(dirty)
         : dirty;
     }
@@ -648,7 +659,7 @@ function createDOMPurify(window = getGlobal()) {
           const htmlToInsert = currentNode.innerHTML;
           currentNode.insertAdjacentHTML(
             'AfterEnd',
-            trustedTypesPolicy
+            USE_TRUSTED_TYPES
               ? trustedTypesPolicy.createHTML(htmlToInsert)
               : htmlToInsert
           );
@@ -1004,9 +1015,7 @@ function createDOMPurify(window = getGlobal()) {
         !WHOLE_DOCUMENT &&
         dirty.indexOf('<') === -1
       ) {
-        return trustedTypesPolicy
-          ? trustedTypesPolicy.createHTML(dirty)
-          : dirty;
+        return USE_TRUSTED_TYPES ? trustedTypesPolicy.createHTML(dirty) : dirty;
       }
 
       /* Initialize the document to work on */
@@ -1089,7 +1098,7 @@ function createDOMPurify(window = getGlobal()) {
       serializedHTML = serializedHTML.replace(ERB_EXPR, ' ');
     }
 
-    return trustedTypesPolicy
+    return USE_TRUSTED_TYPES
       ? trustedTypesPolicy.createHTML(serializedHTML)
       : serializedHTML;
   };
