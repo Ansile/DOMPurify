@@ -317,7 +317,7 @@ function createDOMPurify() {
   var IN_PLACE = false;
 
   /* Whether to use trusted types API inside sanitizer */
-  var USE_TRUSTED_TYPES = false;
+  var USE_TRUSTED_TYPES = true;
 
   /* Allow usage of profiles like html, svg and mathMl */
   var USE_PROFILES = {};

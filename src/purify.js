@@ -239,7 +239,7 @@ function createDOMPurify(window = getGlobal()) {
   let IN_PLACE = false;
 
   /* Whether to use trusted types API inside sanitizer */
-  let USE_TRUSTED_TYPES = false;
+  let USE_TRUSTED_TYPES = true;
 
   /* Allow usage of profiles like html, svg and mathMl */
   let USE_PROFILES = {};
