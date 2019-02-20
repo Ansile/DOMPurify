@@ -380,7 +380,7 @@ function createDOMPurify() {
     SANITIZE_DOM = cfg.SANITIZE_DOM !== false; // Default true
     KEEP_CONTENT = cfg.KEEP_CONTENT !== false; // Default true
     IN_PLACE = cfg.IN_PLACE || false; // Default false
-    USE_TRUSTED_TYPES = cfg.USE_TRUSTED_TYPES === false; // Default true
+    USE_TRUSTED_TYPES = cfg.USE_TRUSTED_TYPES !== false; // Default true
 
     IS_ALLOWED_URI$$1 = cfg.ALLOWED_URI_REGEXP || IS_ALLOWED_URI$$1;
 
